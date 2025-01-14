@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
+# Файлы
 training_file = "Training_data.xlsx"
 new_data_file = "Data to AI/Aktau.xlsx"
 output_file = "Flood_results/Aktau_r.xlsx"
@@ -23,7 +24,7 @@ model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
 # Подготовка данных для прогноза
-new_data_for_prediction = new_data[X_train.columns]  # Используем только нужные признаки
+new_data_for_prediction = new_data[X_train.columns]
 
 # Выполнение прогноза
 new_data_predictions = model.predict(new_data_for_prediction)
@@ -49,6 +50,16 @@ new_data["Риск паводков с коэффициентами"] = new_data
 
 new_data = new_data.drop(columns=["Риск паводков"])
 new_data.rename(columns={"Риск паводков с коэффициентами": "Риск паводков"}, inplace=True)
+
+# Добавляем средние значения по неделям
+new_data["Неделя"] = pd.to_datetime(new_data["Дата"]).dt.isocalendar().week
+weekly_avg = new_data.groupby("Неделя")["Риск паводков"].transform("mean").round(2)
+new_data["Риск паводков (неделя)"] = weekly_avg
+
+# Добавляем средние значения по месяцам
+new_data["Месяц"] = pd.to_datetime(new_data["Дата"]).dt.month
+monthly_avg = new_data.groupby("Месяц")["Риск паводков"].transform("mean").round(2)
+new_data["Риск паводков (месяц)"] = monthly_avg
 
 # Сохраняем результаты в Excel
 new_data.to_excel(output_file, index=False)
